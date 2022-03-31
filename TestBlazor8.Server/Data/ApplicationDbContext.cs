@@ -1,4 +1,6 @@
 ﻿using TestBlazor8.Server.Models;
+using TestBlazor8.Shared.Models;
+using TestBlazor8.Shared;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -18,13 +20,11 @@ namespace TestBlazor8.Server.Data
         {
         }
 
-        // 削除 2022.03.23
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
         }
 
-        // 削除 2022.03.23
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -33,6 +33,10 @@ namespace TestBlazor8.Server.Data
             // Add your customizations after calling base.OnModelCreating(builder);
 
         }
+
+        public DbSet<RoleInfo> RoleInfo { get; set; }
+        public DbSet<UserDetailInfo> UserDetailInfo { get; set; }
+        public DbSet<StockList> StockList { get; set; }
 
     }
 }

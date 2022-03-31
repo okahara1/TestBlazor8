@@ -2,6 +2,9 @@
 @layout LoginLayout
 @inject NavigationManager navigationManager
 @inject IdentityAuthenticationStateProvider authStateProvider
+@inject HttpClient Http
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using TestBlazor8.Shared.Models
 
 <PageTitle>Login</PageTitle>
 
@@ -38,18 +41,30 @@
 @code{
     LoginParameters loginParameters { get; set; } = new LoginParameters();
     string error { get; set; }
+    private RoleInfo[] roles;
 
     async Task OnSubmit()
     {
         error = null;
+
         try
         {
             await authStateProvider.Login(loginParameters);
+
+            // ユーザー詳細情報を取得
+            //roleInfo = await Http.GetFromJsonAsync<List<RoleInfo>>("api/Role/GetRoleInfoList", @loginParameters.UserName);
+            //var result = await Http.GetFromJsonAsync<List<RoleInfo>>("api/Role/GetRoleInfoList");
+            await sessionStorage.ClearAsync();  //　初期化
+            roles = await Http.GetFromJsonAsync<RoleInfo[]>("api/Role/GetRoleInfoList?id=" + @loginParameters.UserName);
+            await sessionStorage.SetItemAsync("RoleId", roles[0].Id);
+
             navigationManager.NavigateTo("");
         }
         catch (Exception ex)
         {
             error = ex.Message;
         }
+
+
     }
 }

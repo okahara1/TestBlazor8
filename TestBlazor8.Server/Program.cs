@@ -2,6 +2,7 @@
 using TestBlazor8.Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Blazored.SessionStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,10 +29,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.Configure<IdentityOptions>(options =>
 {
     // Password settings
-    options.Password.RequireDigit = true;
+    options.Password.RequireDigit = false;
     options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
 
     // Lockout settings
@@ -53,6 +54,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
+builder.Services.AddBlazoredSessionStorage();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
