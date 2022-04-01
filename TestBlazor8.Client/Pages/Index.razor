@@ -15,7 +15,13 @@
         <SurveyPrompt Title="How is Blazor working for you?" />
     </Authorized>
     <Authorizing>
-        <h1>Loading ...</h1>
+            <div class="loading">
+                <div class="loader">
+                    <div class="dot-loader"></div>
+                    <div class="dot-loader dot-loader--2"></div>
+                    <div class="dot-loader dot-loader--3"></div>
+                </div>
+            </div>
     </Authorizing>
 </AuthorizeView>
 
@@ -26,4 +32,5 @@
     {
         roleName = await sessionStorage.GetItemAsync<String>("RoleId");
     }
+
 }

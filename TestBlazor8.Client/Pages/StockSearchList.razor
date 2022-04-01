@@ -11,47 +11,51 @@
 <h1>在庫一覧</h1>
 
 <EditForm Model="condition">
-    <div class="row">
+    <div class="row pb-3 ml-1">
         <div class="form-group col-xs-2 m-1">
             <label>倉庫</label>
-            <InputText id="inputWarehouseId" class="form-control" @bind-Value="condition.CdWarehouseId"></InputText>
+            <InputText id="inputWarehouseId" class="form-control" @bind-Value="condition.WarehouseId"></InputText>
         </div>
         <div class="form-group col-xs-2 m-1">
             <label>ロケーション</label>
-            <InputText id="inputLocation" class="form-control" @bind-Value="condition.CdLocation"></InputText>
+            <InputText id="inputLocation" class="form-control" @bind-Value="condition.Location"></InputText>
         </div>
         <div class="form-group col-xs-2 m-1">
             <label>JAN</label>
-            <InputText id="inputJan" class="form-control" @bind-Value="condition.CdJan"></InputText>
+            <InputText id="inputJan" class="form-control" @bind-Value="condition.Jan"></InputText>
         </div>
         <div class="form-group col-xs-2 m-1">
             <label>品番</label>
-            <InputText id="inputProductNumber" class="form-control" @bind-Value="condition.CdProductNumber"></InputText>
+            <InputText id="inputProductNumber" class="form-control" @bind-Value="condition.ProductNumber"></InputText>
         </div>
         <div class="form-group col-xs-2 m-1">
             <label>品名</label>
-            <InputText id="inputProductName" class="form-control" @bind-Value="condition.CdProductName"></InputText>
+            <InputText id="inputProductName" class="form-control" @bind-Value="condition.ProductName"></InputText>
         </div>
         <div class="form-group col-xs-2 m-1">
             <label>状態</label>
-            <InputText id="inputStatusId" class="form-control" @bind-Value="condition.CdStatusId"></InputText>
+            <InputText id="inputStatusId" class="form-control" @bind-Value="condition.StatusId"></InputText>
         </div>
-    </div>
-    <div class="row">
-        <div class="form-group m-1">
-            <button class="btn btn-primary btn-block" @onclick="Navigate">検索</button>
+        <div class="form-group col-xs-2 m-1 d-flex align-items-end">
+            <button class="btn btn-info btn-block" @onclick="Search">検索</button>
         </div>
     </div>
 </EditForm>
 
 @if (stocklists == null)
 {
-    <p><em>Loading...</em></p>
+            <div class="loading">
+                <div class="loader">
+                    <div class="dot-loader"></div>
+                    <div class="dot-loader dot-loader--2"></div>
+                    <div class="dot-loader dot-loader--3"></div>
+                </div>
+            </div>
 }
 else
 {
-    <table class="table">
-        <thead>
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="thead-dark">
             <tr>
                 <th>倉庫</th>
                 <th>ロケーション</th>
@@ -74,9 +78,9 @@ else
                     <td>@stock.ProductNumber</td>
                     <td>@stock.ProductName</td>
                     <td>@stock.StatusId</td>
-                    <td>@stock.StockCount</td>
-                    <td>@stock.StockSchedule</td>
-                    <td>@stock.ReserveCount</td>
+                    <td><div class="text-right">@stock.StockCount</div></td>
+                    <td><div class="text-right">@stock.StockSchedule</div></td>
+                    <td><div class="text-right">@stock.ReserveCount</div></td>
                 </tr>
             }
         </tbody>
@@ -86,15 +90,25 @@ else
 @code {
     private StockList[] stocklists;
 
-    private StockListSearchCondition condition = new StockListSearchCondition();
+    private StockListParameters condition = new StockListParameters();
+
+    private String searchWarehouseId = "";
+    private String searchLocation = "";
+    private String searchJan = "";
+    private String searchProductNumber = "";
+    private String searchProductName = "";
+    private String searchStatusId = "";
+    //if (@condition.WarehouseId <> null) 
+    //{
+    //    searchWarehouseId = @condition.WarehouseId;
+    //}
+    //if (!string.IsNullOrWhiteSpace(condition.WarehouseId)) { searchWarehouseId = condition.WarehouseId; }
 
     protected override async Task OnInitializedAsync()
     {
         //forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("api/SampleData/WeatherForecasts");
-
-
-        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=" + @condition.CdWarehouseId);
-
+        //stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=" + @condition.WarehouseId + "&location=" + @condition.Location + "&jan=" + @condition.Jan + "&productnumber=" + @condition.ProductNumber + "&productname=" + @condition.ProductName + "&statusid=" + @condition.StatusId);
+        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=a&location=b&jan=c&productnumber=d&productname=e&statusid=f");
     }
 
     private void HandleLocationChanged(object sender, LocationChangedEventArgs args)
@@ -118,7 +132,8 @@ else
     {
         Dictionary<string, string> queryParams = CreateQueryParam();
 
-        stocklists = await Http.GetFromJsonAsync<StockList[]>(QueryHelpers.AddQueryString("api/StockList/GetStockList", queryParams));
+        //stocklists = await Http.GetFromJsonAsync<StockList[]>(QueryHelpers.AddQueryString("api/StockList/GetStockList", queryParams));
+        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=b&location=b&jan=c&productnumber=d&productname=e&statusid=f");
 
         StateHasChanged();
     }
@@ -126,23 +141,23 @@ else
     private void GetQueryString()
     {
         var uriQuery = HttpUtility.ParseQueryString(new Uri(NavigationManager.Uri).Query);
-        condition.CdWarehouseId = uriQuery.Get("warehouseid");
-        condition.CdLocation = uriQuery.Get("location");
-        condition.CdJan = uriQuery.Get("jan");
-        condition.CdProductNumber = uriQuery.Get("productnumber");
-        condition.CdProductName = uriQuery.Get("productname");
-        condition.CdStatusId = uriQuery.Get("statusid");
+        condition.WarehouseId = uriQuery.Get("warehouseid");
+        condition.Location = uriQuery.Get("location");
+        condition.Jan = uriQuery.Get("jan");
+        condition.ProductNumber = uriQuery.Get("productnumber");
+        condition.ProductName = uriQuery.Get("productname");
+        condition.StatusId = uriQuery.Get("statusid");
     }
 
     private Dictionary<string, string> CreateQueryParam()
     {
         var queryParams = new Dictionary<string, string>();
-        if (!string.IsNullOrWhiteSpace(condition.CdWarehouseId)) { queryParams.Add("warehouseid", condition.CdWarehouseId); }
-        if (!string.IsNullOrWhiteSpace(condition.CdLocation)) { queryParams.Add("location", condition.CdLocation); }
-        if (!string.IsNullOrWhiteSpace(condition.CdJan)) { queryParams.Add("jan", condition.CdJan); }
-        if (!string.IsNullOrWhiteSpace(condition.CdProductNumber)) { queryParams.Add("productnumber", condition.CdProductNumber); }
-        if (!string.IsNullOrWhiteSpace(condition.CdProductName)) { queryParams.Add("productname", condition.CdProductName); }
-        if (!string.IsNullOrWhiteSpace(condition.CdStatusId)) { queryParams.Add("statusid", condition.CdStatusId); }
+        if (!string.IsNullOrWhiteSpace(condition.WarehouseId)) { queryParams.Add("warehouseid", condition.WarehouseId); }
+        if (!string.IsNullOrWhiteSpace(condition.Location)) { queryParams.Add("location", condition.Location); }
+        if (!string.IsNullOrWhiteSpace(condition.Jan)) { queryParams.Add("jan", condition.Jan); }
+        if (!string.IsNullOrWhiteSpace(condition.ProductNumber)) { queryParams.Add("productnumber", condition.ProductNumber); }
+        if (!string.IsNullOrWhiteSpace(condition.ProductName)) { queryParams.Add("productname", condition.ProductName); }
+        if (!string.IsNullOrWhiteSpace(condition.StatusId)) { queryParams.Add("statusid", condition.StatusId); }
 
         return queryParams;
     }

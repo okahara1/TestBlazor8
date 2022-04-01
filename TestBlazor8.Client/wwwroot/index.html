@@ -7,11 +7,17 @@
     <base href="/" />
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
+    <link href="css/loader.css" rel="stylesheet" />
     <link href="TestBlazor8.Client.styles.css" rel="stylesheet" />
 </head>
 <body>
-    <div id="app">Loading...</div>
-
+    <div id="app" class="loading">
+        <div class="loader">
+            <div class="dot-loader"></div>
+            <div class="dot-loader dot-loader--2"></div>
+            <div class="dot-loader dot-loader--3"></div>
+        </div>
+    </div>
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
