@@ -1,10 +1,15 @@
 ﻿@page "/stocklist"
 @attribute [Authorize]
-@using TestBlazor8.Shared
+@using CsvHelper;
+@using CsvHelper.Configuration;
 @using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.VisualBasic.FileIO
+@using TestBlazor8.Shared
 @using System.Web
+@using System.Text
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@inject IBlazorDownloadFileService BlazorDownloadFileService
 
 <PageTitle>Stock List</PageTitle>
 
@@ -39,8 +44,24 @@
         <div class="form-group col-xs-2 m-1 d-flex align-items-end">
             <button class="btn btn-info btn-block" @onclick="Search">検索</button>
         </div>
+        <div class="form-group col-xs-2 m-1 d-flex align-items-end">
+            @*<button class="btn btn-info btn-block" @onclick="DownloadExec">ダウンロード</button>*@
+            <button class="btn btn-info btn-block" @onclick="() => confirmation.ShowDialog()">ダウンロード</button>
+        </div>
+    </div>
+    <div class="row pb-3 ml-1">
+        <InputFile OnChange="LoadFiles" multiple />
     </div>
 </EditForm>
+
+<ConfirmDialog 
+    @ref="confirmation" 
+    Title = "ダウンロード"
+    Message = "表示されている一覧をCSV形式でダウンロードします。よろしいですか？"
+    OKButtonCaption="OK"
+    CancelButtonCaption="キャンセル"
+    ActionSelected="ActionSelected">
+</ConfirmDialog>
 
 @if (stocklists == null)
 {
@@ -52,7 +73,17 @@
                 </div>
             </div>
 }
-else
+else @if (isLoading)
+{
+            <div class="loading">
+                <div class="loader">
+                    <div class="dot-loader"></div>
+                    <div class="dot-loader dot-loader--2"></div>
+                    <div class="dot-loader dot-loader--3"></div>
+                </div>
+            </div>
+}
+else 
 {
     <table class="table table-bordered table-hover table-sm">
         <thead class="thead-dark">
@@ -85,6 +116,23 @@ else
             }
         </tbody>
     </table>
+
+    @foreach (var file in loadedFiles)
+    {
+        <p id="file-@(file.FileName)">
+            <strong>Name:</strong> <span id="file-name">@(file.FileName)</span><br />
+            <strong>Size (bytes):</strong> <span id="file-size">@(file.Size)</span><br />
+            <strong>Data_str:</strong> <span id="file-data-str">@(file.Data_str)</span><br />
+        </p>
+        @*
+        <p id="file-@(file.FileName)">
+            <strong>Name:</strong> <span id="file-name">@(file.FileName)</span><br />
+            <strong>Last modified:</strong> <span id="file-last-modified">@(file.LastModified.ToString())</span><br />
+            <strong>Size (bytes):</strong> <span id="file-size">@(file.Size)</span><br />
+            <strong>Content type:</strong> <span id="file-content-type">@(file.ContentType)</span><br />
+        </p>
+        *@
+    }
 }
 
 @code {
@@ -98,17 +146,44 @@ else
     private String searchProductNumber = "";
     private String searchProductName = "";
     private String searchStatusId = "";
+    private bool result;
+    private ConfirmDialog confirmation;
+    private async void ActionSelected(bool dialogResult)
+    {
+        if (dialogResult)
+        {
+            DownloadExec();
+        }
+        //result = dialogResult;
+    }
     //if (@condition.WarehouseId <> null) 
     //{
     //    searchWarehouseId = @condition.WarehouseId;
     //}
-    //if (!string.IsNullOrWhiteSpace(condition.WarehouseId)) { searchWarehouseId = condition.WarehouseId; }
+    List<UploadFile> loadedFiles = new List<UploadFile>();
+    bool isLoading;
+    string errorMessage;
+    Stream _fileStream;
+    UploadFile? uploadFile = null;
 
     protected override async Task OnInitializedAsync()
     {
         //forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("api/SampleData/WeatherForecasts");
-        //stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=" + @condition.WarehouseId + "&location=" + @condition.Location + "&jan=" + @condition.Jan + "&productnumber=" + @condition.ProductNumber + "&productname=" + @condition.ProductName + "&statusid=" + @condition.StatusId);
-        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=a&location=b&jan=c&productnumber=d&productname=e&statusid=f");
+        searchWarehouseId = "\"\"";
+        searchLocation = "\"\"";
+        searchJan = "\"\"";
+        searchProductNumber = "\"\"";
+        searchProductName = "\"\"";
+        searchStatusId = "\"\"";
+        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=" + searchWarehouseId + "&location=" + searchLocation + "&jan=" + searchJan + "&productnumber=" + searchProductNumber + "&productname=" + searchProductName + "&statusid=" + searchStatusId);
+        //if (!string.IsNullOrWhiteSpace(@condition.WarehouseId)) { searchWarehouseId = condition.WarehouseId; }
+        //if (!string.IsNullOrWhiteSpace(@condition.Location)) { searchLocation = condition.Location; }
+        //if (!string.IsNullOrWhiteSpace(@condition.Jan)) { searchJan = condition.Jan; }
+        //if (!string.IsNullOrWhiteSpace(@condition.ProductNumber)) { searchProductNumber = condition.ProductNumber; }
+        //if (!string.IsNullOrWhiteSpace(@condition.ProductName)) { searchProductName = condition.ProductName; }
+        //if (!string.IsNullOrWhiteSpace(@condition.StatusId)) { searchStatusId = condition.StatusId; }
+        //String aaa = ("api/StockList/GetStockList?id=" + searchWarehouseId + "&location=" + searchLocation + "&jan=" + @condition.Jan + "&productnumber=" + @condition.ProductNumber + "&productname=" + @condition.ProductName + "&statusid=" + @condition.StatusId);
+        //stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=" + searchWarehouseId + "&location=" + searchLocation + "&jan=" + @condition.Jan + "&productnumber=" + @condition.ProductNumber + "&productname=" + @condition.ProductName + "&statusid=" + @condition.StatusId);
     }
 
     private void HandleLocationChanged(object sender, LocationChangedEventArgs args)
@@ -133,7 +208,62 @@ else
         Dictionary<string, string> queryParams = CreateQueryParam();
 
         //stocklists = await Http.GetFromJsonAsync<StockList[]>(QueryHelpers.AddQueryString("api/StockList/GetStockList", queryParams));
-        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=b&location=b&jan=c&productnumber=d&productname=e&statusid=f");
+        //stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=b&location=b&jan=c&productnumber=d&productname=e&statusid=f");
+        //if (!string.IsNullOrWhiteSpace(@condition.WarehouseId)) { searchWarehouseId = condition.WarehouseId; }
+        //if (!string.IsNullOrWhiteSpace(@condition.Location)) { searchLocation = condition.Location; }
+        //if (!string.IsNullOrWhiteSpace(@condition.Jan)) { searchJan = condition.Jan; }
+        //if (!string.IsNullOrWhiteSpace(@condition.ProductNumber)) { searchProductNumber = condition.ProductNumber; }
+        //if (!string.IsNullOrWhiteSpace(@condition.ProductName)) { searchProductName = condition.ProductName; }
+        //if (!string.IsNullOrWhiteSpace(@condition.StatusId)) { searchStatusId = condition.StatusId; }
+        if (string.IsNullOrWhiteSpace(@condition.WarehouseId))
+        {
+            searchWarehouseId = "\"\"";
+        }
+        else
+        { 
+            searchWarehouseId = condition.WarehouseId;
+        }
+        if (string.IsNullOrWhiteSpace(@condition.Location)) 
+        {
+            searchLocation = "\"\"";
+        }
+        else
+        { 
+            searchLocation = condition.Location; 
+        }
+        if (string.IsNullOrWhiteSpace(@condition.Jan)) 
+        {
+            searchJan = "\"\"";
+        }
+        else
+        { 
+            searchJan = condition.Jan; 
+        }
+        if (string.IsNullOrWhiteSpace(@condition.ProductNumber)) 
+        {
+            searchProductNumber = "\"\"";
+        }
+        else
+        { 
+            searchProductNumber = condition.ProductNumber; 
+        }
+        if (string.IsNullOrWhiteSpace(@condition.ProductName)) 
+        {
+            searchProductName = "\"\"";
+        }
+        else
+        { 
+            searchProductName = condition.ProductName; 
+        }
+        if (string.IsNullOrWhiteSpace(@condition.StatusId)) 
+        {
+            searchStatusId = "\"\"";
+        }
+        else
+        { 
+            searchStatusId = condition.StatusId; 
+        }
+        stocklists = await Http.GetFromJsonAsync<StockList[]>("api/StockList/GetStockList?id=" + searchWarehouseId + "&location=" + searchLocation + "&jan=" + searchJan + "&productnumber=" + searchProductNumber + "&productname=" + searchProductName + "&statusid=" + searchStatusId);
 
         StateHasChanged();
     }
@@ -152,7 +282,7 @@ else
     private Dictionary<string, string> CreateQueryParam()
     {
         var queryParams = new Dictionary<string, string>();
-        if (!string.IsNullOrWhiteSpace(condition.WarehouseId)) { queryParams.Add("warehouseid", condition.WarehouseId); }
+        if (!string.IsNullOrWhiteSpace(condition.WarehouseId)) { queryParams                .Add("warehouseid", condition.WarehouseId); }
         if (!string.IsNullOrWhiteSpace(condition.Location)) { queryParams.Add("location", condition.Location); }
         if (!string.IsNullOrWhiteSpace(condition.Jan)) { queryParams.Add("jan", condition.Jan); }
         if (!string.IsNullOrWhiteSpace(condition.ProductNumber)) { queryParams.Add("productnumber", condition.ProductNumber); }
@@ -160,5 +290,174 @@ else
         if (!string.IsNullOrWhiteSpace(condition.StatusId)) { queryParams.Add("statusid", condition.StatusId); }
 
         return queryParams;
+    }
+
+    private async Task DownloadExec()
+    {
+        var outStocklist = new List<StockList>();
+        foreach (StockList inStocklist in stocklists)
+        {
+            //new outStocklist { Id = inStocklist.Id, Location = inStocklist.Location }
+            outStocklist.Add(new StockList()
+                {
+                    Id = inStocklist.Id,
+                    Location = inStocklist.Location,
+                    Jan = inStocklist.Jan,
+                    ProductNumber = inStocklist.ProductNumber,
+                    ProductName = inStocklist.ProductName,
+                    StatusId = inStocklist.StatusId,
+                    StockCount = inStocklist.StockCount,
+                    StockSchedule = inStocklist.StockSchedule,
+                    ReserveCount = inStocklist.ReserveCount
+                });
+        }
+        using (var memoryStream = new MemoryStream())
+        using (var writer = new StreamWriter(memoryStream, Encoding.UTF8))
+        using (var csv = new CsvWriter(writer, CultureInfo.CurrentCulture))
+        {
+            csv.WriteRecords(outStocklist);
+            writer.Flush();
+            var bytes = memoryStream.ToArray();
+
+            string filename = $"{DateTime.Now.ToString("yyyyMMddhhmmss")}.csv";
+            var result = await BlazorDownloadFileService.DownloadFile(filename, bytes, System.Net.Mime.MediaTypeNames.Application.Octet);
+        }
+    }
+
+    async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        // パターン６
+        //var reader = new StreamReader(File.OpenRead(@"C:\tmp\a.csv"));
+        //List<string> listA = new List<string>();
+        //List<string> listB = new List<string>();
+        //while (!reader.EndOfStream)
+        //{
+        //    var line = reader.ReadLine();
+        //    var values = line.Split(';');
+
+        //    listA.Add(values[0]);
+        //    listB.Add(values[1]);
+        //    foreach (var coloumn1 in listA)
+        //    {
+        //        Console.WriteLine(coloumn1);
+        //    }
+        //    foreach (var coloumn2 in listB)
+        //    {
+        //        Console.WriteLine(coloumn2);
+        //    }
+        //}
+
+        // パターン５
+        //var parser = new TextFieldParser(@"C:\tmp\20220405023633.csv",Encoding.GetEncoding("utf-8"));
+        //using (parser)
+        //{
+        //    // 区切り文字を指定
+        //    parser.TextFieldType = FieldType.Delimited;
+        //    // カンマに指定
+        //    parser.SetDelimiters(",");
+        //    // 引用符の使用
+        //    parser.HasFieldsEnclosedInQuotes = true;
+        //    // 空白トリムの設定
+        //    parser.TrimWhiteSpace = true;
+        //    while (!parser.EndOfData)
+        //    {
+        //        // フィールドを読込
+        //        string[] row = parser.ReadFields();
+        //        Console.WriteLine(String.Join(", ", row.Select(v => v)));
+        //    }
+        //}
+        //Console.ReadKey();
+
+        // パターン４
+        //var filePath = @"C:\tmp\20220411\20220405023633.csv";
+        ////using (var reader = new StreamReader(filePath, Encoding.GetEncoding("SHIFT_JIS"))) //Shift-JISの文字化け対策にエンコード
+        //using (var reader = new StreamReader(filePath))
+        //{
+        //    using (var csv = new CsvReader(reader, new CultureInfo("ja-JP", false)))
+        //    {
+        //        var records = csv.GetRecords<StockList>();
+        //        foreach(var data in records)
+        //        {
+        //            var data1 = data.Id;
+        //            var data2 = data.Location;
+        //            var data3 = data.Jan;
+        //        }
+        //    }
+        //}
+
+        // パターン３
+        ////var file = e.GetMultipleFiles(1);
+        //var file = e.GetMultipleFiles(3);
+        //var buf = new byte[file[0].Size];
+        ////using (var reader = await file[0].OpenReadStream().ReadAsync(buf))
+        ////await file[0].OpenReadStream().ReadAsync(buf);
+        //using (var reader = new StreamReader(file[0].OpenReadStream()))
+        //using (var csv = new CsvHelper.CsvReader(reader, new CultureInfo("ja-JP", false)))
+        //{
+        //    csv.Read();
+        //    csv.ReadHeader();
+        //    var records = csv.GetRecords<StockList>();
+        //    foreach(var data in records)
+        //    {
+        //        var data1 = data.Id;
+        //        var data2 = data.Location;
+        //        var data3 = data.Jan;
+        //    }
+        //}
+
+
+        // パターン２
+        uploadFile = new();
+        var file = e.GetMultipleFiles(1);
+        var buf = new byte[file[0].Size];
+        await file[0].OpenReadStream().ReadAsync(buf);
+        uploadFile.FileName = file[0].Name;
+        uploadFile.Size = file[0].Size;
+        uploadFile.Data_str = System.Text.Encoding.UTF8.GetString(buf);
+        loadedFiles.Add(uploadFile);
+
+        // パターン１
+        //isLoading = true;
+        //loadedFiles.Clear();
+        //errorMessage = string.Empty;
+
+        //try
+        //{
+        //    foreach (var file in e.GetMultipleFiles(3))
+        //    {
+        //        StateHasChanged();
+        //        var buffers = new byte[file.Size];
+        //        await file.OpenReadStream().ReadAsync(buffers);
+
+        //        var uploadFile = new UploadFile()
+        //        {
+        //            FileName = file.Name,
+        //            ContentType = file.ContentType,
+        //            Size = file.Size,
+        //            LastModified = file.LastModified,
+        //            Data_str = System.Text.Encoding.ASCII.GetString(result)
+        //        };
+
+        //        loadedFiles.Add(uploadFile);
+        //    }
+        //}
+        //catch (Exception ex)
+        //{
+        //    errorMessage = ex.Message;
+        //}
+        //finally
+        //{
+        //    isLoading = false;
+        //}
+    }
+
+    public class UploadFile
+    {
+        public string FileName { get; set; }
+        public byte[] Content { get; set; }
+        public DateTimeOffset LastModified { get; set; }
+        public string ContentType { get; set; }
+        public long Size { get; set; }
+        public string Data_str { get; set; }
     }
 }

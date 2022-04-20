@@ -1,6 +1,6 @@
 ﻿<div class="top-row pl-4 navbar navbar-dark">
     <a class="navbar-brand" href="">TestBlazor8</a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+    <button class="navbar-toggler" @onclick="ToggleNavMenuStock">
         <span class="navbar-toggler-icon"></span>
     </button>
 </div>
@@ -8,7 +8,7 @@
 <div class="@NavMenuCssClass">
     <ul class="nav flex-column">
         <li class="nav-item px-3">
-            <NavLink class="nav-link" @onclick="()=>ToggleNavMenu()" href="" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" @onclick="()=>ToggleNavMenuStock()" href="" Match="NavLinkMatch.All">
                 <span class="oi oi-home" aria-hidden="true"></span> Home
             </NavLink>
         </li>
@@ -23,20 +23,38 @@
             </NavLink>
         </li>
         <li class="nav-item px-3">
-            <NavLink class="nav-link" @onclick="()=>ToggleSubmenu()">
-                <span class="oi oi-menu" aria-hidden="true"></span> 在庫管理
+            <NavLink class="nav-link" @onclick="()=>ToggleSubmenuStock()">
+                <span class="oi oi-list" aria-hidden="true"></span> 在庫管理
             </NavLink>
         </li>
-        @if (expandMenu)
+        @if (expandMenuStock)
         {
-            <li class="nav-item px-4" @onclick="ToggleNavMenu">
-                <NavLink class="nav-link" href="stocklist">
-                    <span class="oi oi-list" aria-hidden="true"></span> 在庫一覧
+            <li class="nav-item px-4" @onclick="ToggleNavMenuStock">
+                <NavLink class="nav-link " href="stocklist">
+                    <span class="oi oi-spreadsheet" aria-hidden="true"></span> 在庫一覧
                 </NavLink>
             </li>
-            <li class="nav-item px-4" @onclick="ToggleNavMenu">
+            <li class="nav-item px-4" @onclick="ToggleNavMenuStock">
                 <NavLink class="nav-link" href="fetchdata">
                     <span class="oi oi-list-rich" aria-hidden="true"></span> 受払一覧
+                </NavLink>
+            </li>
+        }
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" @onclick="()=>ToggleSubmenuMaster()">
+                <span class="oi oi-monitor" aria-hidden="true"></span> マスタ管理
+            </NavLink>
+        </li>
+        @if (expandMenuMaster)
+        {
+            <li class="nav-item px-4" @onclick="ToggleNavMenuMaster">
+                <NavLink class="nav-link " href="usermaster">
+                    <span class="oi oi-person" aria-hidden="true"></span> ユーザーマスタ
+                </NavLink>
+            </li>
+            <li class="nav-item px-4" @onclick="ToggleNavMenuMaster">
+                <NavLink class="nav-link" href="fetchdata">
+                    <span class="oi oi-layers" aria-hidden="true"></span> 品名マスタ
                 </NavLink>
             </li>
         }
@@ -44,20 +62,27 @@
 </div>
 
 @code {
-    private bool collapseNavMenu = true;
-
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private bool expandMenu;
-
-    private void ToggleNavMenu()
+    private bool collapseNavMenuStock = true;
+    private string NavMenuCssClass => collapseNavMenuStock ? "collapse" : null;
+    private bool expandMenuStock;
+    private void ToggleNavMenuStock()
     {
-        collapseNavMenu = !collapseNavMenu;
-        expandMenu = false;
+        collapseNavMenuStock = !collapseNavMenuStock;
+        //expandMenu = false;
+    }
+    private void ToggleSubmenuStock()
+    {
+        expandMenuStock = !expandMenuStock;
     }
 
-    private void ToggleSubmenu()
+    private bool collapseNavMenuMaster = true;
+    private bool expandMenuMaster;
+    private void ToggleNavMenuMaster()
     {
-        expandMenu = !expandMenu;
+        collapseNavMenuMaster = !collapseNavMenuMaster;
+    }
+    private void ToggleSubmenuMaster()
+    {
+        expandMenuMaster = !expandMenuMaster;
     }
 }

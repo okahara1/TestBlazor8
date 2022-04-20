@@ -37,6 +37,7 @@ namespace TestBlazor8.Server.Data
         public DbSet<RoleInfo> RoleInfo { get; set; }
         public DbSet<UserDetailInfo> UserDetailInfo { get; set; }
         public DbSet<StockList> StockList { get; set; }
+        public DbSet<UserMasterList> UserMaster { get; set; }
 
     }
 }

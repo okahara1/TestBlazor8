@@ -1,11 +1,8 @@
 ﻿using TestBlazor8.Server.Data;
-using TestBlazor8.Server.Models;
 using TestBlazor8.Shared;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace TestBlazor8.Server.Controllers
 {
@@ -41,26 +38,26 @@ namespace TestBlazor8.Server.Controllers
                 "  from dbo.t_stock_info s" +
                 " where 1=1";
 
-            if (id != null) {
+            if (id != null && id != "\"\"") {
                 sql += " and s.warehouse_id = {0}";
             }
-            if (location != null)
+            if (location != null && location != "\"\"")
             {
                 sql += " and s.location = {1}";
             }
-            if (jan != null)
+            if (jan != null && jan != "\"\"")
             {
                 sql += " and s.jan = {2}";
             }
-            if (productnumber != null)
+            if (productnumber != null && productnumber != "\"\"")
             {
                 sql += " and s.product_number = {3}";
             }
-            if (productname != null)
+            if (productname != null && productname != "\"\"")
             {
                 sql += " and s.product_name = {4}";
             }
-            if (statusid != null)
+            if (statusid != null && statusid != "\"\"")
             {
                 sql += " and s.status_id = {5}";
             }
@@ -74,5 +71,6 @@ namespace TestBlazor8.Server.Controllers
 
             return searchResult;
         }
+
     }
 }

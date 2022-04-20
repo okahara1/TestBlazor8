@@ -1,0 +1,158 @@
+﻿@page "/usermaster"
+@attribute [Authorize]
+@using CsvHelper;
+@using CsvHelper.Configuration;
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.VisualBasic.FileIO
+@using TestBlazor8.Shared.Models
+@using System.Web
+@using System.Text
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject IBlazorDownloadFileService BlazorDownloadFileService
+
+<PageTitle>UserMasterList</PageTitle>
+
+<h1>ユーザー一覧</h1>
+
+<EditForm Model="condition">
+    <div class="row pb-3 ml-1">
+        <div class="form-group col-xs-2 m-1">
+            <label>ユーザーID</label>
+            <InputText id="inputUserId" class="form-control" @bind-Value="condition.UserId"></InputText>
+        </div>
+        <div class="form-group col-xs-2 m-1">
+            <label>ユーザー名</label>
+            <InputText id="inputUserName" class="form-control" @bind-Value="condition.UserName"></InputText>
+        </div>
+        <div class="form-group col-xs-2 m-1 d-flex align-items-end">
+            <button class="btn btn-info btn-block" @onclick="Search">検索</button>
+        </div>
+    </div>
+</EditForm>
+
+@if (userlists == null)
+{
+            <div class="loading">
+                <div class="loader">
+                    <div class="dot-loader"></div>
+                    <div class="dot-loader dot-loader--2"></div>
+                    <div class="dot-loader dot-loader--3"></div>
+                </div>
+            </div>
+}
+else @if (isLoading)
+{
+            <div class="loading">
+                <div class="loader">
+                    <div class="dot-loader"></div>
+                    <div class="dot-loader dot-loader--2"></div>
+                    <div class="dot-loader dot-loader--3"></div>
+                </div>
+            </div>
+}
+else 
+{
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="thead-dark">
+            <tr>
+                <th>ユーザーID</th>
+                <th>ユーザー名</th>
+                <th>部課</th>
+                <th>権限</th>
+                <th>更新日時</th>
+                <th>更新者</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in userlists)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.UserName</td>
+                    <td>@user.DeptId</td>
+                    <td>@user.RoleId</td>
+                    <td>@user.UpdatetDt</td>
+                    <td>@user.UpdateUserId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+}
+
+@code {
+    private UserMasterList[] userlists;
+
+    private UserMasterParameters condition = new UserMasterParameters();
+
+    private String searchUserId = "";
+    private String searchUserName = "";
+    bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        searchUserId = "\"\"";
+        searchUserName = "\"\"";
+        userlists = await Http.GetFromJsonAsync<UserMasterList[]>("api/UserMaster/GetUserMaster?id=" + searchUserId + "&username=" + searchUserName);
+    }
+
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs args)
+    {
+        GetQueryString();
+
+        InvokeAsync(async() =>
+        {
+            await Search();
+        });
+    }
+
+    private void Navigate()
+    {
+        Dictionary<string, string> queryParams = CreateQueryParam();
+
+        NavigationManager.NavigateTo(QueryHelpers.AddQueryString("usermaster", queryParams));
+    }
+
+    private async Task Search()
+    {
+        Dictionary<string, string> queryParams = CreateQueryParam();
+
+        if (string.IsNullOrWhiteSpace(@condition.UserId))
+        {
+            searchUserId = "\"\"";
+        }
+        else
+        { 
+            searchUserId = condition.UserId;
+        }
+        if (string.IsNullOrWhiteSpace(@condition.UserName)) 
+        {
+            searchUserName = "\"\"";
+        }
+        else
+        { 
+            searchUserName = condition.UserName; 
+        }
+        userlists = await Http.GetFromJsonAsync<UserMasterList[]>("api/UserMaster/GetUserMaster?id=" + searchUserId + "&username=" + searchUserName);
+
+        StateHasChanged();
+    }
+
+    private void GetQueryString()
+    {
+        var uriQuery = HttpUtility.ParseQueryString(new Uri(NavigationManager.Uri).Query);
+        condition.UserId = uriQuery.Get("userid");
+        condition.UserName = uriQuery.Get("username");
+    }
+
+    private Dictionary<string, string> CreateQueryParam()
+    {
+        var queryParams = new Dictionary<string, string>();
+        if (!string.IsNullOrWhiteSpace(condition.UserId)) { queryParams.Add("userid", condition.UserId); }
+        if (!string.IsNullOrWhiteSpace(condition.UserName)) { queryParams.Add("username", condition.UserName); }
+
+        return queryParams;
+    }
+
+}
